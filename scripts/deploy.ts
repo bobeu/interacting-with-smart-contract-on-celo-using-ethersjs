@@ -1,7 +1,5 @@
-import Web3 from "web3";
-import { AbiItem } from "web3-utils";
 import { abi, bytecode } from "../artifacts/contracts/ChequePayment.sol/ChequePayment.json";
-import { utils, CNumber } from "./accountsUtils";
+import { utils } from "./accountsUtils";
 
 async function main() {
   // Import the utilities
@@ -10,10 +8,8 @@ async function main() {
     PAYEE, 
     OWNER, 
     getBalances,
-    // signAndSendTrx,
     webSocketProvider,
     waitForTrannsaction,
-    // sendSignedTransaction,
     VALIDITY_WINDOW_IN_HRS } = utils();
 
   await getBalances();
@@ -26,7 +22,7 @@ async function main() {
   // Create an instance of the Chequepayment contract 
   var chequePayment = new ethers.ContractFactory(abi, bytecode, OWNER);
   
-  // Run the constructor
+  // Run the deployment
   const chequePaymentTrx = await chequePayment.deploy()
   await chequePaymentTrx.deployed();
 
@@ -54,13 +50,6 @@ async function main() {
         value: value
       }
     );
-    // await signAndSendTrx({
-    //   value: value,
-    //   data: drawCheque?.encodeABI(),
-    //   to: contractAddress,
-    //   functionName: "DrawCheque",
-    //   signer: OWNER
-    // })
     await waitForTrannsaction(trx)
     .then(async function(receipt: any){
       logData && console.log("\nDrawCheque Trx hash", receipt.transactionHash);
@@ -75,14 +64,6 @@ async function main() {
       amount,
       {value: msgValue}
     );
-    // await signAndSendTrx({
-      
-    //   // data: increaseChequeValue?.encodeABI(),
-    //   to: contractAddress,
-    //   functionName: 'IncreaseCheque',
-    //   signer: OWNER
-    // })
-    // const receipt = await trx.wait(1);
     await waitForTrannsaction(trx)
     .then(async function(receipt: any){
       logData && console.log("\nTrx receipt: ", receipt.transactionHash);
@@ -93,12 +74,6 @@ async function main() {
   // Owner can reduce previously drawn cheque
   async function reduceCheque(amount: string) {
     const trx = await contractInstance.connect(OWNER).reduceChequeValue(PAYEE.address, amount)
-    // await signAndSendTrx({
-    //   // data: reduceChequeValue?.encodeABI(),
-    //   to: contractAddress,
-    //   functionName: 'ReduceCheque',
-    //   signer: OWNER
-    // })
     await waitForTrannsaction(trx)
       .then(async function(receipt: any){
         logData && console.log("\nTrx receipt: ", receipt);
@@ -109,13 +84,6 @@ async function main() {
   // Owner is able to cancel cheques provided they're within the cancellation window.
   async function cancelCheque() {
     const trx = await contractInstance.connect(OWNER).cancelDrawnCheque(PAYEE.address);
-    // await signAndSendTrx({
-    //   data: cancelDrawnCheque?.encodeABI(),
-    //   to: contractAddress,
-    //   functionName: 'CancelCheque',
-    //   signer: OWNER
-    // })
-    // const receipt = await trx.wait(1);
     await waitForTrannsaction(trx)
       .then(async function(receipt: any){
         logData && console.log("\nTrx receipt: ", receipt.transactionHash);
@@ -127,27 +95,20 @@ async function main() {
   async function cashout() {
     const trx = await contractInstance.connect(PAYEE).cashout();
     await waitForTrannsaction(trx)
-    // await signAndSendTrx({
-    //   data: cashout?.encodeABI(),
-    //   to: contractAddress,
-    //   functionName: 'Cashout',
-    //   signer: PAYEE
-    // })
       .then(async function(receipt: any){
         logData && console.log("\nTrx receipt: ", receipt);
         await getOpenCheques("Cashout");
     });
   }
-
-  // const hexlify = (x:string | number) => {
-  //   return ethers.utils.hexValue(x);
-  // }
   
-  // Initial cheque amount
   const INIT_CHEQUE_AMOUNT = '10000000000000000';
+  
   const SUB_CHEQUE_AMOUNT = '20000000000000000';
+  
   let increment = '50000000000000000';
+  
   let decrement = '40000000000000000';
+  
   const MSG_VALUE = '100000000000000000';
 
   await drawCheque(INIT_CHEQUE_AMOUNT, MSG_VALUE);

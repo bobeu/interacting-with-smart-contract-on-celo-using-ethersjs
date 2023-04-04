@@ -24,11 +24,15 @@ export interface TrxProps {
 // Period which cheques are valid
 const VALIDITY_WINDOW_IN_HRS = 1;
 
+const hexlify = (x:number) => {
+  return ethers.utils.hexlify(x);
+}
+
 // Gas cost
-const GAS = ethers.utils.hexlify(1500000);
+const GAS = hexlify(1500000);
 
 // Gas price
-const GASPRICE = ethers.utils.hexlify(3000000000);
+const GASPRICE = hexlify(3000000000);
 
 // Celo's Websocker URI
 const SOCKET_URL = "wss://alfajores-forno.celo-testnet.org/ws";
@@ -51,8 +55,8 @@ const webSocketProvider = new ethers.providers.WebSocketProvider(
 );
 
 // Replace the first argument with your private keys
-const owner = new ethers.Wallet("ba28d5cea192f121................................................", webSocketProvider);
-const payee = new ethers.Wallet("8c0dc6d793391e9c................................................", webSocketProvider);
+const owner = new ethers.Wallet("ba28d5cea192f121db5f1dd7f501532170bb7bb984c4d3747df3e251e529f77d", webSocketProvider);
+const payee = new ethers.Wallet("8c0dc6d793391e9c1baf18285e7dd05cd504b85d620045b33f33600a9db1203e", webSocketProvider);
 
 console.log(`Payee.address: ${payee.address}\n`);
 console.log(`Payee.public key: ${payee.publicKey}\n`);
@@ -82,15 +86,6 @@ async function getBalances() {
   }
 }
 
-// Utility to broadcast raw transaction that are signed to the network
-const sendSignedTransaction = async(signedRawTrx: string | Promise<string>, functionName: string) : Promise<TransactionReceipt> => {
-  const trx = await webSocketProvider.sendTransaction(signedRawTrx);
-  /** You can use trx.wait(<pass confirmation number>)
-   * or use alternative method below
-  */ 
-  return await webSocketProvider.waitForTransaction( trx.hash, 2);
-}
-
 // Export the utilities to use anywhere in your program.
 export const utils = () => {
   return {
@@ -102,23 +97,9 @@ export const utils = () => {
     VALIDITY_WINDOW_IN_HRS,
     webSocketProvider,
     getBalances: getBalances,
-    sendSignedTransaction,
     waitForTrannsaction: async function (trx: any) {
       console.log("Waiting for confirmation ...");
       return await trx.wait(2);
     },
-    signAndSendTrx: async function (props: TrxProps) {
-      const address = payee.address;
-      console.log(`\nPreparing to sign and send transaction from ${address}`);
-      const { data, to, value, functionName, signer } = props;
-    
-      const signedRawTrx = await signer.signTransaction({
-        data: data,
-        to: to,
-        value: value
-      })
-      return await sendSignedTransaction(signedRawTrx, functionName);
-    },
-    
   }
 }
